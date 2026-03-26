@@ -65,6 +65,20 @@ Nền tảng PHẢI đạt các chỉ tiêu hiệu năng đo lường được s
 - **Standard Tooling**: Ưu tiên thư viện được sử dụng rộng rãi, có tài liệu tốt hơn so với custom implementation. Giải pháp tùy chỉnh PHẢI có biện minh bằng văn bản giải thích tại sao không có thư viện hiện có nào đáp ứng.
 - **Flat Architecture**: Ưu tiên ít layer trừu tượng hơn. Mỗi architectural layer PHẢI biện minh sự tồn tại của nó bằng cách giải quyết một vấn đề cụ thể, được ghi nhận.
 
+### VII. API-First Design
+
+Quá trình phát triển API PHẢI tuân thủ luồng quản trị sau để đảm bảo tính nhất quán và tự động hóa:
+
+1. **[Design API - OpenAPI]**: Định nghĩa contract (OpenAPI/Swagger) trước khi viết code.
+2. **[Validate Spec]**: Thực hiện linter/validator trên OpenAPI spec chuẩn hóa.
+3. **[Generate Code (FE + BE)]**: Tự động sinh types, interfaces, và API client/server boilerplate từ spec.
+4. **[Add Runtime Validation Layer]**: Áp dụng middleware validate request/response payload dựa trên OpenAPI schema.
+5. **[Wrap with Service Layer]**: Tách biệt logic routing (transport) với business logic.
+6. **[Implement Business Logic]**: Phát triển core logic độc lập tại Service Layer.
+7. **[Contract Testing]**: Khẳng định implementation thực tế khớp với OpenAPI spec đã định nghĩa.
+8. **[CI/CD Enforcement]**: Bước Validate và Contract Testing PHẢI qua CI pipeline.
+9. **[Versioning & Release]**: Đánh version API nghiêm ngặt (vd: `/v1/`, qua header) trước khi release.
+
 ## Performance Standards & SLAs
 
 | Chỉ Số | Mục Tiêu | Phương Pháp Đo Lường |
@@ -119,6 +133,7 @@ Reviewer PHẢI xác minh:
 - [ ] Principle IV: Không có performance regression
 - [ ] Principle V: Các vấn đề security được xử lý (auth, validation, logging)
 - [ ] Principle VI: Giải pháp đủ đơn giản cho vấn đề
+- [ ] Principle VII: Tuân thủ quy trình API-First Design (OpenAPI specs, sinh code, validation layer, contract testing)
 
 ## Governance
 
@@ -135,5 +150,6 @@ Reviewer PHẢI xác minh:
   4. **Code Quality** (Principle I)
   5. **UX Consistency** (Principle III)
   6. **Simplicity** (Principle VI)
+  7. **API-First Design** (Principle VII)
 
 **Version**: 1.0.0 | **Ratified**: 2026-03-26 | **Last Amended**: 2026-03-26
