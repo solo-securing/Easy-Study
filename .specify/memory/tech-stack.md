@@ -6,13 +6,13 @@
 ## Complete Tech Stack
 
 ### Frontend
-- **Next.js** (React) + **TypeScript**
+- **Next.js (16)** (React) + **TypeScript**
 - **Turborepo** — monorepo build system for JavaScript and TypeScript codebases
 - **shadcn/ui** (Base UI) — base component library
 - **openapi-typescript** — generate TypeScript types từ spec
 
 ### Backend
-- **Golang** + **Gin Web Framework**
+- **Golang (1.26)** + **Gin Web Framework**
 - **oapi-codegen** — generate Go types + Gin server interface từ spec
 
 ### API Contract
@@ -21,10 +21,10 @@
 - **Schemathesis** — contract/fuzz testing tự động từ spec
 
 ### Database & Storage
-- **PostgreSQL** — primary database
+- **PostgreSQL (18)** — primary database
 - **Redis** — cache + session
 - **Rustfs** (S3-compatible) — object storage cho tài liệu, bài nộp
-- **Migration DB**: `golang-migrate/migrate`
+- **golang-migrate/migrate**: Migration DB
 
 ### Auth
 - **JWT** + Refresh Token
