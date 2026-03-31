@@ -64,12 +64,8 @@
 
               # System deps
               gcc
-              #gnumake
-              #pkg-config
-
-              # Infra
-              #postgres
-              #redis
+              gnumake
+              pkg-config
 
               # utils
               wget
