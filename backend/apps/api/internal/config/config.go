@@ -2,44 +2,47 @@ package config
 
 import (
 	"fmt"
-	"packages/configloader"
-	"packages/configloader/parsers/yaml"
-	"packages/configloader/providers/env"
-	"packages/configloader/providers/file"
+	"strings"
 
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/knadh/koanf/parsers/yaml"
+	"github.com/knadh/koanf/providers/env/v2"
+	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 )
 
 type AppConfig struct {
-	Env      string
-	Server   ServerConfig
-	Postgres PostgresConfig
-	Redis    RedisConfig
+	Env      string         `koanf:"env"`
+	Server   ServerConfig   `koanf:"server"`
+	Postgres PostgresConfig `koanf:"postgres"`
+	Redis    RedisConfig    `koanf:"redis"`
 }
 
 type ServerConfig struct {
-	Host       string
-	Port       int
-	CtxTimeout int
+	Host       string `koanf:"host"`
+	Port       int    `koanf:"port"`
+	CtxTimeout int    `koanf:"ctx_timeout"`
 }
 
 type PostgresConfig struct {
-	Host     string
-	Port     int
-	Database string
-	Username string
-	Password string
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	Database string `koanf:"database"`
+	Username string `koanf:"username"`
+	Password string `koanf:"password"`
 }
 
 type RedisConfig struct {
-	Host     string
-	Port     int
-	Password string
-	DB       int
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	Password string `koanf:"password"`
+	DB       int    `koanf:"db"`
 }
 
 // Singleton instance of AppConfig
 var config *AppConfig
+
+var k = koanf.New(".")
 
 // Load loads the configuration from environment variables and a file,
 // and returns a singleton instance of AppConfig.
@@ -50,23 +53,30 @@ func Load(configPath string) *AppConfig {
 		return config
 	}
 
-	cfLoader := configloader.New()
-
-	// Load environment variables with the specified prefix.
-	cfLoader.Load(
-		env.Provider(env.Opt{
-			Prefix: "EASYSTUDY_",
-		}),
-		nil,
-	)
-
 	// Load configuration from the specified file path.
-	cfLoader.Load(
+	k.Load(
 		file.Provider(configPath),
 		yaml.Parser(),
 	)
 
-	config = buildConfig(cfLoader)
+	// Load environment variables and merge into the loaded config.
+	// "EASYSTUDY" is the prefix to filter the env vars by.
+	// TransformFunc is used to transform the env var names to match the config keys.
+	k.Load(env.Provider(".", env.Opt{
+		Prefix: "EASYSTUDY_",
+		TransformFunc: func(k, v string) (string, any) {
+			k = strings.ReplaceAll(strings.ToLower(
+				strings.TrimPrefix(k, "EASYSTUDY_")), "_", ".")
+
+			// If there is a space in the value, split the value into a slice by the space.
+			if strings.Contains(v, ",") {
+				return k, strings.Split(v, ",")
+			}
+			return k, v
+		},
+	}), nil)
+
+	k.Unmarshal("", &config)
 	return config
 }
 
@@ -77,51 +87,4 @@ func Get() *AppConfig {
 		panic("Config not loaded. Please call Load() first.")
 	}
 	return config
-}
-
-// buildConfig constructs an AppConfig instance from the provided ConfigLoader.
-func buildConfig(cfLoader *configloader.ConfigLoader) *AppConfig {
-	return &AppConfig{
-		Env: pickString(cfLoader, "local", "EASYSTUDY_ENV", "env"),
-		Server: ServerConfig{
-			Host:       pickString(cfLoader, "localhost", "EASYSTUDY_SERVER_HOST", "server.host"),
-			Port:       pickInt(cfLoader, 8080, "EASYSTUDY_SERVER_PORT", "server.port"),
-			CtxTimeout: pickInt(cfLoader, 30, "EASYSTUDY_SERVER_CTX_TIMEOUT", "server.ctx_timeout"),
-		},
-		Postgres: PostgresConfig{
-			Host:     pickString(cfLoader, "localhost", "EASYSTUDY_POSTGRES_HOST", "postgres.host"),
-			Port:     pickInt(cfLoader, 5432, "EASYSTUDY_POSTGRES_PORT", "postgres.port"),
-			Database: pickString(cfLoader, "EasyStudy", "EASYSTUDY_POSTGRES_DATABASE", "postgres.database"),
-			Username: pickString(cfLoader, "postgres", "EASYSTUDY_POSTGRES_USERNAME", "postgres.username"),
-			Password: pickString(cfLoader, "postgres", "EASYSTUDY_POSTGRES_PASSWORD", "postgres.password"),
-		},
-		Redis: RedisConfig{
-			Host:     pickString(cfLoader, "localhost", "EASYSTUDY_REDIS_HOST", "redis.host"),
-			Port:     pickInt(cfLoader, 6379, "EASYSTUDY_REDIS_PORT", "redis.port"),
-			Password: pickString(cfLoader, "", "EASYSTUDY_REDIS_PASSWORD", "redis.password"),
-			DB:       pickInt(cfLoader, 0, "EASYSTUDY_REDIS_DB", "redis.db"),
-		},
-	}
-}
-
-// pickString checks the provided keys in order and returns the first non-empty string value found.
-// If no value is found, it returns the provided fallback.
-func pickString(cfLoader *configloader.ConfigLoader, fallback string, keys ...string) string {
-	for _, key := range keys {
-		if v := cfLoader.String(key); v != "" {
-			return v
-		}
-	}
-	return fallback
-}
-
-// pickInt checks the provided keys in order and returns the first non-zero integer value found.
-// If no value is found, it returns the provided fallback.
-func pickInt(cfLoader *configloader.ConfigLoader, fallback int, keys ...string) int {
-	for _, key := range keys {
-		if v := cfLoader.Int(key); v != 0 {
-			return v
-		}
-	}
-	return fallback
 }
