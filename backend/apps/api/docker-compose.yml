@@ -1,47 +1,51 @@
 services:
-  app:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
       target: prod
     restart: unless-stopped
     ports:
-      - ${PORT}:${PORT}
+      - ${EASYSTUDY_SERVER_PORT}:${EASYSTUDY_SERVER_PORT}
     environment:
-      APP_ENV: ${APP_ENV}
-      PORT: ${PORT}
-      BLUEPRINT_DB_HOST: ${BLUEPRINT_DB_HOST}
-      BLUEPRINT_DB_PORT: ${BLUEPRINT_DB_PORT}
-      BLUEPRINT_DB_DATABASE: ${BLUEPRINT_DB_DATABASE}
-      BLUEPRINT_DB_USERNAME: ${BLUEPRINT_DB_USERNAME}
-      BLUEPRINT_DB_PASSWORD: ${BLUEPRINT_DB_PASSWORD}
-      BLUEPRINT_DB_SCHEMA: ${BLUEPRINT_DB_SCHEMA}
+      EASYSTUDY_ENV: ${EASYSTUDY_ENV}
+      EASYSTUDY_SERVER_HOST: ${EASYSTUDY_SERVER_HOST}
+      EASYSTUDY_SERVER_PORT: ${EASYSTUDY_SERVER_PORT}
+      EASYSTUDY_POSTGRES_HOST: ${EASYSTUDY_POSTGRES_HOST}
+      EASYSTUDY_POSTGRES_PORT: ${EASYSTUDY_POSTGRES_PORT}
+      EASYSTUDY_POSTGRES_DATABASE: ${EASYSTUDY_POSTGRES_DATABASE}
+      EASYSTUDY_POSTGRES_USERNAME: ${EASYSTUDY_POSTGRES_USERNAME}
+      EASYSTUDY_POSTGRES_PASSWORD: ${EASYSTUDY_POSTGRES_PASSWORD}
+      EASYSTUDY_REDIS_HOST: ${EASYSTUDY_REDIS_HOST}
+      EASYSTUDY_REDIS_PORT: ${EASYSTUDY_REDIS_PORT}
+      EASYSTUDY_REDIS_PASSWORD: ${EASYSTUDY_REDIS_PASSWORD}
+      EASYSTUDY_REDIS_DB: ${EASYSTUDY_REDIS_DB}
     depends_on:
-      psql_bp:
+      psql:
         condition: service_healthy
     networks:
-      - blueprint
-  psql_bp:
+      - easystudy
+  psql:
     image: postgres:latest
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${BLUEPRINT_DB_DATABASE}
-      POSTGRES_USER: ${BLUEPRINT_DB_USERNAME}
-      POSTGRES_PASSWORD: ${BLUEPRINT_DB_PASSWORD}
+      POSTGRES_DB: ${EASYSTUDY_POSTGRES_DATABASE}
+      POSTGRES_USER: ${EASYSTUDY_POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${EASYSTUDY_POSTGRES_PASSWORD}
     ports:
-      - "${BLUEPRINT_DB_PORT}:5432"
+      - "${EASYSTUDY_POSTGRES_PORT}:5432"
     volumes:
-      - psql_volume_bp:/var/lib/postgresql/data
+      - psql_volume:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${BLUEPRINT_DB_USERNAME} -d ${BLUEPRINT_DB_DATABASE}'"]
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U ${EASYSTUDY_POSTGRES_USERNAME} -d ${EASYSTUDY_POSTGRES_DATABASE}'"]
       interval: 5s
       timeout: 5s
       retries: 3
       start_period: 15s
     networks:
-      - blueprint
+      - easystudy
 
 volumes:
-  psql_volume_bp:
+  psql_volume:
 networks:
-  blueprint:
+  easystudy:
