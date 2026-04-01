@@ -1,0 +1,2777 @@
+openapi: 3.1.0
+info:
+  title: LMS SaaS API
+  version: 0.2.0
+  description: >-
+    Comprehensive v1 baseline contract for the multi-tenant LMS SaaS platform.
+    This document is expanded to cover all major requirements in spec.md,
+    including auth, tenant config, user/group management, course lifecycle,
+    quiz attempts, reporting, billing, notifications, and impersonation audit.
+servers:
+  - url: https://api.lms.example.com
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+  - name: Auth
+  - name: Tenants
+  - name: Users
+  - name: Groups
+  - name: Courses
+  - name: Progress
+  - name: Quizzes
+  - name: Reports
+  - name: Plans
+  - name: Notifications
+  - name: Impersonation
+paths:
+  /healthz:
+    get:
+      tags: [System]
+      summary: Health check endpoint
+      operationId: healthCheck
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with email and password
+      operationId: login
+      security: []
+      x-rate-limit: 100_per_minute_per_ip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '423':
+          $ref: '#/components/responses/AccountLocked'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh access token
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Access token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current session
+      operationId: logout
+      x-required-role: authenticated
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '204':
+          description: Logged out
+
+  /v1/auth/activation/verify:
+    post:
+      tags: [Auth]
+      summary: Verify activation link and bootstrap first authenticated session
+      operationId: verifyActivationLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivationVerifyRequest'
+      responses:
+        '200':
+          description: Activation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '410':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/auth/activation/resend:
+    post:
+      tags: [Auth]
+      summary: Resend activation link and invalidate previous links
+      operationId: resendActivationLink
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivationResendRequest'
+      responses:
+        '202':
+          description: Resend accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionAccepted'
+
+  /v1/auth/register/student:
+    post:
+      tags: [Auth]
+      summary: Student self-registration under tenant subdomain policy
+      operationId: registerStudentSelfService
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentSelfRegisterRequest'
+      responses:
+        '201':
+          description: Student account registration accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/auth/sso/login-url:
+    post:
+      tags: [Auth]
+      summary: Create SSO login URL when tenant has SSO entitlement
+      operationId: createSsoLoginUrl
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SsoLoginUrlRequest'
+      responses:
+        '200':
+          description: SSO login URL generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SsoLoginUrlResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /v1/auth/sso/callback:
+    post:
+      tags: [Auth]
+      summary: Process SSO callback and perform JIT provisioning/linking
+      operationId: handleSsoCallback
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SsoCallbackRequest'
+      responses:
+        '200':
+          description: SSO authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /v1/tenants:
+    get:
+      tags: [Tenants]
+      summary: List tenants
+      operationId: listTenants
+      x-required-role: super_admin
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [active, suspended, deactivated]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+      responses:
+        '200':
+          description: Tenant list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantListResponse'
+    post:
+      tags: [Tenants]
+      summary: Create tenant
+      operationId: createTenant
+      x-required-role: super_admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreateRequest'
+      responses:
+        '201':
+          description: Tenant created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/tenants/{tenantId}:
+    get:
+      tags: [Tenants]
+      summary: Get tenant details
+      operationId: getTenantById
+      x-required-role: super_admin_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Tenant details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/tenants/{tenantId}/status:
+    patch:
+      tags: [Tenants]
+      summary: Change tenant status
+      operationId: updateTenantStatus
+      x-required-role: super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantStatusPatch'
+      responses:
+        '200':
+          description: Tenant status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/tenants/{tenantId}/branding:
+    get:
+      tags: [Tenants]
+      summary: Get tenant branding
+      operationId: getTenantBranding
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Branding configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantBranding'
+    patch:
+      tags: [Tenants]
+      summary: Update tenant branding
+      operationId: patchTenantBranding
+      x-required-role: tenant_admin_or_super_admin_impersonation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantBrandingPatch'
+      responses:
+        '200':
+          description: Branding updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantBranding'
+
+  /v1/tenants/{tenantId}/settings:
+    get:
+      tags: [Tenants]
+      summary: Get tenant policy/settings
+      operationId: getTenantSettings
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Tenant settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSettings'
+    patch:
+      tags: [Tenants]
+      summary: Update tenant policy/settings
+      operationId: patchTenantSettings
+      x-required-role: tenant_admin_or_super_admin_impersonation
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantSettingsPatch'
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSettings'
+
+  /v1/tenants/{tenantId}/quota:
+    get:
+      tags: [Tenants]
+      summary: Get tenant quota and threshold status
+      operationId: getTenantQuota
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Quota snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantQuotaResponse'
+
+  /v1/tenants/{tenantId}/usage:
+    get:
+      tags: [Tenants]
+      summary: Get tenant usage summary
+      operationId: getTenantUsage
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantUsageResponse'
+
+  /v1/tenants/{tenantId}/sso/config:
+    get:
+      tags: [Tenants]
+      summary: Get SSO configuration
+      operationId: getTenantSsoConfig
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: SSO config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SsoConfigResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags: [Tenants]
+      summary: Upsert SSO configuration
+      operationId: putTenantSsoConfig
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SsoConfigRequest'
+      responses:
+        '200':
+          description: SSO config updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SsoConfigResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /v1/tenants/{tenantId}/users:
+    get:
+      tags: [Users]
+      summary: List users in tenant
+      operationId: listTenantUsers
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [tenant_admin, instructor, student]
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [invited, active, suspended, deactivated]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+    post:
+      tags: [Users]
+      summary: Create user manually and optionally send invitation
+      operationId: createTenantUser
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/tenants/{tenantId}/users/{userId}:
+    get:
+      tags: [Users]
+      summary: Get user details
+      operationId: getTenantUser
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Users]
+      summary: Update user role/status/profile
+      operationId: patchTenantUser
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserPatchRequest'
+      responses:
+        '200':
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+
+  /v1/tenants/{tenantId}/users/{userId}/invite-resend:
+    post:
+      tags: [Users]
+      summary: Resend invitation/activation email
+      operationId: resendUserInvitation
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '202':
+          description: Invitation resend accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteResendResponse'
+
+  /v1/tenants/{tenantId}/users/import-jobs:
+    post:
+      tags: [Users]
+      summary: Start CSV user import
+      operationId: createUserImportJob
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CSVImportJobRequest'
+      responses:
+        '202':
+          description: Import accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CSVImportJobResponse'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /v1/tenants/{tenantId}/users/import-jobs/{jobId}:
+    get:
+      tags: [Users]
+      summary: Get import job status and line-level results
+      operationId: getUserImportJobStatus
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/JobId'
+      responses:
+        '200':
+          description: Import status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CSVImportJobResponse'
+
+  /v1/tenants/{tenantId}/groups:
+    get:
+      tags: [Groups]
+      summary: List groups
+      operationId: listTenantGroups
+      x-required-role: tenant_admin_or_instructor
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Group list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListResponse'
+    post:
+      tags: [Groups]
+      summary: Create group
+      operationId: createTenantGroup
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupCreateRequest'
+      responses:
+        '201':
+          description: Group created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+
+  /v1/tenants/{tenantId}/groups/{groupId}:
+    patch:
+      tags: [Groups]
+      summary: Update group details
+      operationId: patchTenantGroup
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupPatchRequest'
+      responses:
+        '200':
+          description: Group updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+
+  /v1/tenants/{tenantId}/groups/{groupId}/members:
+    put:
+      tags: [Groups]
+      summary: Replace group members
+      operationId: putTenantGroupMembers
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupMembersUpsertRequest'
+      responses:
+        '200':
+          description: Group members updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupResponse'
+
+  /v1/tenants/{tenantId}/courses:
+    get:
+      tags: [Courses]
+      summary: List courses in tenant
+      operationId: listTenantCourses
+      x-required-role: tenant_admin_or_instructor_or_student
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, published, archived]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+      responses:
+        '200':
+          description: Course list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseListResponse'
+    post:
+      tags: [Courses]
+      summary: Create course in draft state
+      operationId: createCourse
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseCreateRequest'
+      responses:
+        '201':
+          description: Course created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+  /v1/tenants/{tenantId}/courses/{courseId}:
+    get:
+      tags: [Courses]
+      summary: Get course details
+      operationId: getCourse
+      x-required-role: tenant_admin_or_instructor_or_student
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Course details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+    patch:
+      tags: [Courses]
+      summary: Update course metadata
+      operationId: patchCourse
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoursePatchRequest'
+      responses:
+        '200':
+          description: Course updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+  /v1/tenants/{tenantId}/courses/{courseId}/structure:
+    put:
+      tags: [Courses]
+      summary: Replace course hierarchy (section/subsection/unit)
+      operationId: putCourseStructure
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CourseStructureUpsertRequest'
+      responses:
+        '200':
+          description: Course structure updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseResponse'
+
+  /v1/tenants/{tenantId}/courses/{courseId}/publish:
+    post:
+      tags: [Courses]
+      summary: Publish course after hierarchy validation
+      operationId: publishCourse
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Course published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoursePublishResponse'
+        '422':
+          description: Hierarchy validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishValidationError'
+
+  /v1/tenants/{tenantId}/courses/{courseId}/archive:
+    post:
+      tags: [Courses]
+      summary: Archive published course
+      operationId: archiveCourse
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Course archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseArchiveResponse'
+
+  /v1/tenants/{tenantId}/courses/{courseId}/enrollments:
+    get:
+      tags: [Courses]
+      summary: List enrollments for course
+      operationId: listCourseEnrollments
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Enrollment list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentListResponse'
+    post:
+      tags: [Courses]
+      summary: Assign enrollments by user/group/role
+      operationId: assignCourseEnrollments
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollmentAssignRequest'
+      responses:
+        '200':
+          description: Enrollments assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentListResponse'
+
+  /v1/me/courses:
+    get:
+      tags: [Courses]
+      summary: List courses assigned to current user
+      operationId: listMyCourses
+      x-required-role: student_or_instructor_or_tenant_admin
+      responses:
+        '200':
+          description: My courses list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseListResponse'
+
+  /v1/tenants/{tenantId}/courses/{courseId}/progress/me:
+    get:
+      tags: [Progress]
+      summary: Get current student progress in a course
+      operationId: getMyCourseProgress
+      x-required-role: student
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Current student progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressMeResponse'
+
+  /v1/tenants/{tenantId}/courses/{courseId}/progress:
+    get:
+      tags: [Progress]
+      summary: Get course-wide learner progress report
+      operationId: getCourseProgressReport
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Course progress report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseProgressReportResponse'
+
+  /v1/tenants/{tenantId}/users/{userId}/progress:
+    get:
+      tags: [Progress]
+      summary: Get progress of a specific learner
+      operationId: getUserProgress
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: User progress summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProgressResponse'
+
+  /v1/tenants/{tenantId}/quizzes/{quizId}:
+    get:
+      tags: [Quizzes]
+      summary: Get quiz definition metadata
+      operationId: getQuiz
+      x-required-role: student_or_instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/QuizId'
+      responses:
+        '200':
+          description: Quiz details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizResponse'
+
+  /v1/tenants/{tenantId}/quizzes/{quizId}/attempts:
+    post:
+      tags: [Quizzes]
+      summary: Start or resume quiz attempt
+      operationId: startQuizAttempt
+      x-required-role: student
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/QuizId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizAttemptStartRequest'
+      responses:
+        '201':
+          description: Attempt created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizAttemptResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /v1/tenants/{tenantId}/quizzes/{quizId}/attempts/{attemptId}:
+    get:
+      tags: [Quizzes]
+      summary: Get current quiz attempt state
+      operationId: getQuizAttempt
+      x-required-role: student_or_instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/QuizId'
+        - $ref: '#/components/parameters/AttemptId'
+      responses:
+        '200':
+          description: Attempt state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizAttemptDetailResponse'
+
+  /v1/tenants/{tenantId}/quizzes/{quizId}/attempts/{attemptId}/autosave:
+    patch:
+      tags: [Quizzes]
+      summary: Autosave quiz answers
+      operationId: autosaveQuizAttempt
+      x-required-role: student
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/QuizId'
+        - $ref: '#/components/parameters/AttemptId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuizAutosaveRequest'
+      responses:
+        '200':
+          description: Autosave recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizAutosaveResponse'
+
+  /v1/tenants/{tenantId}/quizzes/{quizId}/attempts/{attemptId}/submit:
+    post:
+      tags: [Quizzes]
+      summary: Submit quiz attempt
+      operationId: submitQuizAttempt
+      x-required-role: student
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/QuizId'
+        - $ref: '#/components/parameters/AttemptId'
+      responses:
+        '200':
+          description: Attempt submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuizSubmitResponse'
+
+  /v1/tenants/{tenantId}/notifications:
+    get:
+      tags: [Notifications]
+      summary: List tenant announcements and notification campaigns
+      operationId: listTenantNotifications
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Tenant notification list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+    post:
+      tags: [Notifications]
+      summary: Create tenant-wide announcement
+      operationId: createTenantNotification
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationCreateRequest'
+      responses:
+        '202':
+          description: Notification queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionAccepted'
+
+  /v1/me/notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for current user
+      operationId: listMyNotifications
+      x-required-role: authenticated
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Current user notifications
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+
+  /v1/me/notifications/{notificationId}/read:
+    patch:
+      tags: [Notifications]
+      summary: Mark notification as read
+      operationId: markMyNotificationAsRead
+      x-required-role: authenticated
+      parameters:
+        - $ref: '#/components/parameters/NotificationId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationReadPatch'
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationSummary'
+
+  /v1/tenants/{tenantId}/notifications/delivery-failures:
+    get:
+      tags: [Notifications]
+      summary: List notification/email delivery failures
+      operationId: listNotificationDeliveryFailures
+      x-required-role: tenant_admin_or_super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Delivery failure list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationDeliveryFailureListResponse'
+
+  /v1/admin/notifications/global:
+    post:
+      tags: [Notifications]
+      summary: Broadcast global system notification/banner
+      operationId: createGlobalNotification
+      x-required-role: super_admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalNotificationRequest'
+      responses:
+        '202':
+          description: Global notification queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalNotificationResponse'
+
+  /v1/tenants/{tenantId}/reports/dashboard:
+    get:
+      tags: [Reports]
+      summary: Tenant dashboard metrics
+      operationId: getTenantDashboard
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantDashboardResponse'
+
+  /v1/tenants/{tenantId}/reports/courses/{courseId}:
+    get:
+      tags: [Reports]
+      summary: Instructor course report
+      operationId: getInstructorCourseReport
+      x-required-role: instructor_or_tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - $ref: '#/components/parameters/CourseId'
+      responses:
+        '200':
+          description: Course report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseReportResponse'
+
+  /v1/admin/reports/tenants-usage:
+    get:
+      tags: [Reports]
+      summary: Super admin cross-tenant usage report
+      operationId: getAdminTenantsUsageReport
+      x-required-role: super_admin
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 20
+      responses:
+        '200':
+          description: Tenant usage report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUsageReportResponse'
+
+  /v1/admin/plans:
+    get:
+      tags: [Plans]
+      summary: List predefined and custom plans
+      operationId: listPlans
+      x-required-role: super_admin
+      responses:
+        '200':
+          description: Plan list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanListResponse'
+
+  /v1/admin/plans/custom:
+    post:
+      tags: [Plans]
+      summary: Create custom plan
+      operationId: createCustomPlan
+      x-required-role: super_admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomPlanCreateRequest'
+      responses:
+        '201':
+          description: Custom plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomPlanResponse'
+
+  /v1/admin/tenants/{tenantId}/plan:
+    patch:
+      tags: [Plans]
+      summary: Assign or change tenant plan
+      operationId: patchTenantPlanAssignment
+      x-required-role: super_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantPlanAssignPatch'
+      responses:
+        '200':
+          description: Plan assignment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantPlanAssignResponse'
+
+  /v1/admin/impersonations:
+    post:
+      tags: [Impersonation]
+      summary: Start impersonation session
+      operationId: startImpersonation
+      x-required-role: super_admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImpersonationStartRequest'
+      responses:
+        '201':
+          description: Session started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpersonationSessionResponse'
+
+  /v1/admin/impersonations/{sessionId}:
+    delete:
+      tags: [Impersonation]
+      summary: End impersonation session
+      operationId: endImpersonation
+      x-required-role: super_admin
+      parameters:
+        - $ref: '#/components/parameters/SessionId'
+      responses:
+        '204':
+          description: Session ended
+
+  /v1/tenants/{tenantId}/impersonation-audit:
+    get:
+      tags: [Impersonation]
+      summary: Tenant-visible impersonation audit log (enterprise entitlement required)
+      operationId: getTenantImpersonationAudit
+      x-required-role: tenant_admin
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Impersonation audit log
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImpersonationAuditListResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantId:
+      name: tenantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CourseId:
+      name: courseId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    QuizId:
+      name: quizId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AttemptId:
+      name: attemptId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    JobId:
+      name: jobId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: Business conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: Authentication failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Forbidden:
+      description: Access denied
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    AccountLocked:
+      description: Account temporarily locked after repeated failed logins
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    Problem:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
+
+    HealthResponse:
+      type: object
+      required: [status, timestamp]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: string
+          format: date-time
+
+    PageMeta:
+      type: object
+      required: [page, size, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+
+    ActionAccepted:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [queued, accepted]
+
+    LoginRequest:
+      type: object
+      required: [email, password, tenantSubdomain]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        tenantSubdomain:
+          type: string
+          pattern: '^[a-z0-9-]{3,63}$'
+
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken:
+          type: string
+
+    LogoutRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+
+    TokenResponse:
+      type: object
+      required: [accessToken, refreshToken, expiresInSeconds]
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+          example: 3600
+
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/TokenResponse'
+        - type: object
+          required: [user, tenant]
+          properties:
+            user:
+              $ref: '#/components/schemas/UserSummary'
+            tenant:
+              $ref: '#/components/schemas/TenantSummary'
+
+    ActivationVerifyRequest:
+      type: object
+      required: [activationToken, password]
+      properties:
+        activationToken:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    ActivationResendRequest:
+      type: object
+      required: [tenantSubdomain, email]
+      properties:
+        tenantSubdomain:
+          type: string
+          pattern: '^[a-z0-9-]{3,63}$'
+        email:
+          type: string
+          format: email
+
+    StudentSelfRegisterRequest:
+      type: object
+      required: [tenantSubdomain, email, fullName]
+      properties:
+        tenantSubdomain:
+          type: string
+          pattern: '^[a-z0-9-]{3,63}$'
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        locale:
+          type: string
+
+    SsoLoginUrlRequest:
+      type: object
+      required: [tenantSubdomain, redirectUri]
+      properties:
+        tenantSubdomain:
+          type: string
+          pattern: '^[a-z0-9-]{3,63}$'
+        redirectUri:
+          type: string
+          format: uri
+
+    SsoLoginUrlResponse:
+      type: object
+      required: [url, state, expiresAt]
+      properties:
+        url:
+          type: string
+          format: uri
+        state:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+
+    SsoCallbackRequest:
+      type: object
+      required: [state, code]
+      properties:
+        state:
+          type: string
+        code:
+          type: string
+
+    TenantCreateRequest:
+      type: object
+      required: [name, subdomain, ownerEmail, planCode]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        subdomain:
+          type: string
+          pattern: '^[a-z0-9-]{3,63}$'
+        ownerEmail:
+          type: string
+          format: email
+        planCode:
+          type: string
+          enum: [free, trial, pro, enterprise]
+        userLimitOverride:
+          type: integer
+          minimum: 1
+        courseLimitOverride:
+          type: integer
+          minimum: 1
+
+    TenantStatusPatch:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [active, suspended, deactivated]
+        reason:
+          type: string
+
+    TenantSummary:
+      type: object
+      required: [id, name, subdomain, status, planCode]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        subdomain:
+          type: string
+        status:
+          type: string
+          enum: [active, suspended, deactivated]
+        planCode:
+          type: string
+
+    TenantResponse:
+      allOf:
+        - $ref: '#/components/schemas/TenantSummary'
+        - type: object
+          required: [createdAt, defaultLocale, timezone]
+          properties:
+            createdAt:
+              type: string
+              format: date-time
+            defaultLocale:
+              type: string
+            timezone:
+              type: string
+
+    TenantListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantSummary'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    TenantBranding:
+      type: object
+      required: [displayName, primaryColor]
+      properties:
+        displayName:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+        faviconUrl:
+          type: string
+          format: uri
+        primaryColor:
+          type: string
+          pattern: '^#[A-Fa-f0-9]{6}$'
+
+    TenantBrandingPatch:
+      type: object
+      properties:
+        displayName:
+          type: string
+        logoUrl:
+          type: string
+          format: uri
+        faviconUrl:
+          type: string
+          format: uri
+        primaryColor:
+          type: string
+          pattern: '^#[A-Fa-f0-9]{6}$'
+
+    TenantSettings:
+      type: object
+      required: [defaultLocale, timezone, sessionTtlMinutes, allowStudentSelfRegistration]
+      properties:
+        defaultLocale:
+          type: string
+        timezone:
+          type: string
+        sessionTtlMinutes:
+          type: integer
+          minimum: 15
+          maximum: 1440
+        allowStudentSelfRegistration:
+          type: boolean
+        passwordPolicy:
+          type: object
+          additionalProperties: true
+        privacyPolicyUrl:
+          type: string
+          format: uri
+
+    TenantSettingsPatch:
+      type: object
+      properties:
+        defaultLocale:
+          type: string
+        timezone:
+          type: string
+        sessionTtlMinutes:
+          type: integer
+          minimum: 15
+          maximum: 1440
+        allowStudentSelfRegistration:
+          type: boolean
+        passwordPolicy:
+          type: object
+          additionalProperties: true
+        privacyPolicyUrl:
+          type: string
+          format: uri
+
+    TenantQuotaResponse:
+      type: object
+      required:
+        [
+          planCode,
+          userLimit,
+          userUsed,
+          courseLimit,
+          courseUsed,
+          storageLimitGb,
+          storageUsedGb,
+          warningLevel
+        ]
+      properties:
+        planCode:
+          type: string
+        userLimit:
+          type: integer
+        userUsed:
+          type: integer
+        courseLimit:
+          type: integer
+        courseUsed:
+          type: integer
+        storageLimitGb:
+          type: integer
+        storageUsedGb:
+          type: number
+          format: float
+        warningLevel:
+          type: string
+          enum: [none, warn_80, warn_90, exceeded]
+
+    TenantUsageResponse:
+      type: object
+      required: [tenantId, userCount, courseCount, loginCount, learningMinutes, storageUsedBytes]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        userCount:
+          type: integer
+        courseCount:
+          type: integer
+        loginCount:
+          type: integer
+        learningMinutes:
+          type: integer
+        storageUsedBytes:
+          type: integer
+          format: int64
+
+    SsoConfigRequest:
+      type: object
+      required: [enabled, provider, issuer, clientId, clientSecretRef, redirectUri]
+      properties:
+        enabled:
+          type: boolean
+        provider:
+          type: string
+          enum: [google_oidc, oidc, saml]
+        issuer:
+          type: string
+        clientId:
+          type: string
+        clientSecretRef:
+          type: string
+        redirectUri:
+          type: string
+          format: uri
+
+    SsoConfigResponse:
+      type: object
+      required: [enabled, provider, issuer, entitlementAllowed]
+      properties:
+        enabled:
+          type: boolean
+        provider:
+          type: string
+        issuer:
+          type: string
+        clientId:
+          type: string
+        redirectUri:
+          type: string
+          format: uri
+        entitlementAllowed:
+          type: boolean
+
+    UserCreateRequest:
+      type: object
+      required: [email, fullName, role]
+      properties:
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [tenant_admin, instructor, student]
+        sendInvitation:
+          type: boolean
+          default: true
+
+    UserPatchRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [tenant_admin, instructor, student]
+        status:
+          type: string
+          enum: [invited, active, suspended, deactivated]
+
+    UserSummary:
+      type: object
+      required: [id, email, fullName, role, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [super_admin, tenant_admin, instructor, student]
+        status:
+          type: string
+          enum: [invited, active, suspended, deactivated]
+
+    UserResponse:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          required: [tenantId, createdAt]
+          properties:
+            tenantId:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+
+    UserListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserSummary'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    InviteResendResponse:
+      type: object
+      required: [status, deliveryChannel]
+      properties:
+        status:
+          type: string
+          enum: [queued]
+        deliveryChannel:
+          type: string
+          enum: [email]
+
+    CSVImportJobRequest:
+      type: object
+      required: [fileAssetId, defaultRole]
+      properties:
+        fileAssetId:
+          type: string
+          format: uuid
+        defaultRole:
+          type: string
+          enum: [student, instructor]
+        sendInvitation:
+          type: boolean
+          default: true
+
+    CSVImportJobResponse:
+      type: object
+      required: [jobId, status, totalRows, successCount, failedCount]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued, processing, completed, failed]
+        totalRows:
+          type: integer
+        successCount:
+          type: integer
+        failedCount:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              row:
+                type: integer
+              message:
+                type: string
+
+    GroupCreateRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    GroupPatchRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+
+    GroupMembersUpsertRequest:
+      type: object
+      required: [userIds]
+      properties:
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    GroupResponse:
+      type: object
+      required: [id, name, memberCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        memberCount:
+          type: integer
+
+    GroupListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/GroupResponse'
+
+    CourseCreateRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+
+    CoursePatchRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+
+    UnitInput:
+      type: object
+      required: [title, type, sortOrder]
+      properties:
+        title:
+          type: string
+        type:
+          type: string
+          enum: [video, document, quiz]
+        sortOrder:
+          type: integer
+          minimum: 0
+        contentRef:
+          type: string
+        quizId:
+          type: string
+          format: uuid
+
+    SubsectionInput:
+      type: object
+      required: [title, sortOrder, units]
+      properties:
+        title:
+          type: string
+        sortOrder:
+          type: integer
+          minimum: 0
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitInput'
+
+    SectionInput:
+      type: object
+      required: [title, sortOrder, subsections]
+      properties:
+        title:
+          type: string
+        sortOrder:
+          type: integer
+          minimum: 0
+        subsections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubsectionInput'
+
+    CourseStructureUpsertRequest:
+      type: object
+      required: [sections]
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/SectionInput'
+
+    CourseSummary:
+      type: object
+      required: [id, title, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [draft, published, archived]
+
+    CourseResponse:
+      allOf:
+        - $ref: '#/components/schemas/CourseSummary'
+        - type: object
+          required: [tenantId, createdAt, updatedAt]
+          properties:
+            tenantId:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CourseListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourseSummary'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    CoursePublishResponse:
+      type: object
+      required: [courseId, status, publishedAt]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [published]
+        publishedAt:
+          type: string
+          format: date-time
+
+    CourseArchiveResponse:
+      type: object
+      required: [courseId, status, archivedAt]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [archived]
+        archivedAt:
+          type: string
+          format: date-time
+
+    PublishValidationError:
+      type: object
+      required: [code, message, missingNodes]
+      properties:
+        code:
+          type: string
+          enum: [COURSE_STRUCTURE_INVALID]
+        message:
+          type: string
+        missingNodes:
+          type: array
+          items:
+            type: object
+            required: [path, reason]
+            properties:
+              path:
+                type: string
+              reason:
+                type: string
+
+    EnrollmentAssignRequest:
+      type: object
+      required: [assignmentMode]
+      properties:
+        assignmentMode:
+          type: string
+          enum: [user_ids, group_ids, roles]
+        userIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        groupIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [student, instructor, tenant_admin]
+
+    EnrollmentRow:
+      type: object
+      required: [userId, sourceType, assignedAt]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        sourceType:
+          type: string
+          enum: [direct, group, role]
+        assignedAt:
+          type: string
+          format: date-time
+
+    EnrollmentListResponse:
+      type: object
+      required: [courseId, items]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/EnrollmentRow'
+
+    ProgressMeResponse:
+      type: object
+      required: [courseId, completionPercent, completedUnitCount]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        completionPercent:
+          type: number
+          format: float
+        completedUnitCount:
+          type: integer
+        officialQuizScore:
+          type: number
+          format: float
+
+    StudentProgressItem:
+      type: object
+      required: [userId, completionPercent, completedUnitCount]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        completionPercent:
+          type: number
+          format: float
+        completedUnitCount:
+          type: integer
+        officialQuizScore:
+          type: number
+          format: float
+
+    CourseProgressReportResponse:
+      type: object
+      required: [courseId, items]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentProgressItem'
+
+    UserProgressResponse:
+      type: object
+      required: [userId, courses]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        courses:
+          type: array
+          items:
+            type: object
+            required: [courseId, completionPercent]
+            properties:
+              courseId:
+                type: string
+                format: uuid
+              completionPercent:
+                type: number
+                format: float
+              officialQuizScore:
+                type: number
+                format: float
+
+    QuizResponse:
+      type: object
+      required: [quizId, title, maxScore, passingScore, timeLimitMinutes, attemptLimit, scoringPolicy]
+      properties:
+        quizId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        maxScore:
+          type: number
+          format: float
+        passingScore:
+          type: number
+          format: float
+        timeLimitMinutes:
+          type: integer
+        attemptLimit:
+          type: integer
+        shuffleQuestions:
+          type: boolean
+        scoringPolicy:
+          type: string
+          enum: [highest_valid_attempt]
+
+    QuizAttemptStartRequest:
+      type: object
+      properties:
+        resumeAttemptId:
+          type: string
+          format: uuid
+
+    QuizAnswer:
+      type: object
+      required: [questionId]
+      properties:
+        questionId:
+          type: string
+          format: uuid
+        selectedOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        textAnswer:
+          type: string
+
+    QuizAttemptResponse:
+      type: object
+      required: [attemptId, attemptNo, status, startedAt, expiresAt]
+      properties:
+        attemptId:
+          type: string
+          format: uuid
+        attemptNo:
+          type: integer
+        status:
+          type: string
+          enum: [in_progress]
+        startedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+
+    QuizAttemptDetailResponse:
+      type: object
+      required: [attemptId, attemptNo, status, startedAt, expiresAt, answers]
+      properties:
+        attemptId:
+          type: string
+          format: uuid
+        attemptNo:
+          type: integer
+        status:
+          type: string
+          enum: [in_progress, submitted, auto_submitted, expired]
+        startedAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        submittedAt:
+          type: string
+          format: date-time
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizAnswer'
+
+    QuizAutosaveRequest:
+      type: object
+      required: [answers, clientSavedAt]
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuizAnswer'
+        clientSavedAt:
+          type: string
+          format: date-time
+
+    QuizAutosaveResponse:
+      type: object
+      required: [attemptId, status, savedAt]
+      properties:
+        attemptId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [in_progress]
+        savedAt:
+          type: string
+          format: date-time
+
+    QuizSubmitResponse:
+      type: object
+      required: [attemptId, status, score, officialScorePolicy, countedTowardAttemptLimit]
+      properties:
+        attemptId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [submitted, auto_submitted]
+        score:
+          type: number
+          format: float
+        officialScorePolicy:
+          type: string
+          enum: [highest_valid_attempt]
+        countedTowardAttemptLimit:
+          type: boolean
+
+    NotificationCreateRequest:
+      type: object
+      required: [title, body, channel]
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        channel:
+          type: string
+          enum: [in_app, email, both]
+        audience:
+          type: object
+          additionalProperties: true
+
+    GlobalNotificationRequest:
+      type: object
+      required: [title, body, channel]
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+        channel:
+          type: string
+          enum: [in_app, email, both]
+
+    GlobalNotificationResponse:
+      type: object
+      required: [notificationId, status]
+      properties:
+        notificationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [queued]
+
+    NotificationSummary:
+      type: object
+      required: [id, title, body, channel, read, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        body:
+          type: string
+        channel:
+          type: string
+          enum: [in_app, email, both]
+        read:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        emailStatus:
+          type: string
+          enum: [pending, sent, failed]
+
+    NotificationListResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationSummary'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    NotificationReadPatch:
+      type: object
+      properties:
+        read:
+          type: boolean
+          default: true
+
+    NotificationDeliveryFailureRow:
+      type: object
+      required: [notificationId, recipient, messageType, attempts, status]
+      properties:
+        notificationId:
+          type: string
+          format: uuid
+        recipient:
+          type: string
+          format: email
+        messageType:
+          type: string
+          enum: [invitation, notification, quota_warning]
+        attempts:
+          type: integer
+        status:
+          type: string
+          enum: [failed]
+        errorCode:
+          type: string
+
+    NotificationDeliveryFailureListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationDeliveryFailureRow'
+
+    TenantDashboardResponse:
+      type: object
+      required: [tenantId, activeUserCount, activeCourseCount, completionRate]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        activeUserCount:
+          type: integer
+        activeCourseCount:
+          type: integer
+        completionRate:
+          type: number
+          format: float
+
+    CourseReportResponse:
+      type: object
+      required: [courseId, learnerCount, completionRate, items]
+      properties:
+        courseId:
+          type: string
+          format: uuid
+        learnerCount:
+          type: integer
+        completionRate:
+          type: number
+          format: float
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StudentProgressItem'
+
+    AdminUsageRow:
+      type: object
+      required: [tenantId, tenantName, userCount, courseCount, loginCount, learningMinutes]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantName:
+          type: string
+        userCount:
+          type: integer
+        courseCount:
+          type: integer
+        loginCount:
+          type: integer
+        learningMinutes:
+          type: integer
+        storageUsedBytes:
+          type: integer
+          format: int64
+
+    AdminUsageReportResponse:
+      type: object
+      required: [items, meta]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUsageRow'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+
+    PlanSummary:
+      type: object
+      required: [code, name, userLimit, courseLimit, storageLimitGb, entitlements, isCustom]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        userLimit:
+          type: integer
+        courseLimit:
+          type: integer
+        storageLimitGb:
+          type: integer
+        entitlements:
+          type: object
+          additionalProperties:
+            type: boolean
+        isCustom:
+          type: boolean
+
+    PlanListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlanSummary'
+
+    CustomPlanCreateRequest:
+      type: object
+      required: [name, userLimit, courseLimit, entitlements]
+      properties:
+        name:
+          type: string
+        userLimit:
+          type: integer
+          minimum: 1
+        courseLimit:
+          type: integer
+          minimum: 1
+        storageLimitGb:
+          type: integer
+          minimum: 1
+        entitlements:
+          type: object
+          additionalProperties:
+            type: boolean
+          properties:
+            sso:
+              type: boolean
+
+    CustomPlanResponse:
+      allOf:
+        - $ref: '#/components/schemas/PlanSummary'
+        - type: object
+          required: [planId]
+          properties:
+            planId:
+              type: string
+              format: uuid
+
+    TenantPlanAssignPatch:
+      type: object
+      required: [targetPlan]
+      properties:
+        targetPlan:
+          type: string
+          description: plan code or custom plan id
+        reason:
+          type: string
+        allowOverQuota:
+          type: boolean
+          default: true
+
+    TenantPlanAssignResponse:
+      type: object
+      required: [tenantId, previousPlan, currentPlan, effectiveAt, quotaState]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        previousPlan:
+          type: string
+        currentPlan:
+          type: string
+        effectiveAt:
+          type: string
+          format: date-time
+        quotaState:
+          type: string
+          enum: [within_limit, warn_80, warn_90, exceeded_block_new]
+
+    ImpersonationStartRequest:
+      type: object
+      required: [tenantId]
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+
+    ImpersonationSessionResponse:
+      type: object
+      required: [sessionId, tenantId, startedAt, mode]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        startedAt:
+          type: string
+          format: date-time
+        mode:
+          type: string
+          enum: [read_and_config_non_destructive]
+
+    ImpersonationAuditRow:
+      type: object
+      required: [sessionId, superAdminId, startedAt, endedAt, actions]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        superAdminId:
+          type: string
+          format: uuid
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: string
+          format: date-time
+        actions:
+          type: array
+          items:
+            type: string
+
+    ImpersonationAuditListResponse:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImpersonationAuditRow'
