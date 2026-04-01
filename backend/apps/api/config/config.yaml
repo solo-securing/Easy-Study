@@ -1,0 +1,16 @@
+env: local
+server:
+  host: localhost
+  port: 8080
+  ctx_timeout: 10
+postgres:
+  host: localhost
+  port: 5432
+  database: EasyStudy
+  username: postgres
+  password: postgres
+redis:
+  host: localhost
+  port: 6379
+  password: ""
+  db: 0
