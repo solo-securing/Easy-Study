@@ -42,6 +42,74 @@ func (s *Server) RegisterRoutes() http.Handler {
 	tenantAdmin.Use(middleware.RequireRoles("tenant_admin"))
 	tenantAdmin.GET("/health", s.healthHandler)
 
+	tenantScoped := api.Group("/tenants/:tenantId")
+	tenantScoped.Use(middleware.RequireRoles("tenant_admin", "super_admin", "instructor"))
+	tenantScoped.GET("/users", s.deps.UserHandler.ListUsers)
+	tenantScoped.POST("/users", s.deps.UserHandler.CreateUser)
+	tenantScoped.GET("/users/:userId", s.deps.UserHandler.GetUser)
+	tenantScoped.PATCH("/users/:userId", s.deps.UserHandler.PatchUser)
+	tenantScoped.POST("/users/:userId/invite-resend", s.deps.UserHandler.ResendInvitation)
+	tenantScoped.POST("/users/import-jobs", s.deps.UserHandler.CreateImportJob)
+	tenantScoped.GET("/users/import-jobs/:jobId", s.deps.UserHandler.GetImportJob)
+	tenantScoped.GET("/groups", s.deps.UserHandler.ListGroups)
+	tenantScoped.POST("/groups", s.deps.UserHandler.CreateGroup)
+	tenantScoped.PATCH("/groups/:groupId", s.deps.UserHandler.PatchGroup)
+	tenantScoped.PUT("/groups/:groupId/members", s.deps.UserHandler.PutGroupMembers)
+	tenantScoped.GET("/courses", s.deps.CourseHandler.ListCourses)
+	tenantScoped.POST("/courses", s.deps.CourseHandler.CreateCourse)
+	tenantScoped.GET("/courses/:courseId", s.deps.CourseHandler.GetCourse)
+	tenantScoped.PATCH("/courses/:courseId", s.deps.CourseHandler.PatchCourse)
+	tenantScoped.PUT("/courses/:courseId/structure", s.deps.CourseHandler.PutCourseStructure)
+	tenantScoped.POST("/courses/:courseId/publish", s.deps.CourseHandler.PublishCourse)
+	tenantScoped.POST("/courses/:courseId/archive", s.deps.CourseHandler.ArchiveCourse)
+	tenantScoped.GET("/courses/:courseId/enrollments", s.deps.CourseHandler.ListEnrollments)
+	tenantScoped.POST("/courses/:courseId/enrollments", s.deps.CourseHandler.AssignEnrollments)
+	tenantScoped.GET("/branding", s.deps.TenantSettingsHandler.GetBranding)
+	tenantScoped.PATCH("/branding", s.deps.TenantSettingsHandler.PatchBranding)
+	tenantScoped.GET("/settings", s.deps.TenantSettingsHandler.GetSettings)
+	tenantScoped.PATCH("/settings", s.deps.TenantSettingsHandler.PatchSettings)
+
+	auth := api.Group("/auth")
+	auth.POST("/activation/verify", func(c *gin.Context) {
+		var req struct {
+			Token string `json:"token"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil || req.Token == "" {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+			return
+		}
+		token, err := s.deps.ActivationService.Verify(c.Request.Context(), req.Token)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusGone, gin.H{"error": err.Error()})
+			return
+		}
+		if err := s.deps.ActivationService.Consume(c.Request.Context(), req.Token); err != nil {
+			c.AbortWithStatusJSON(http.StatusGone, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"userId":   token.UserID,
+			"tenantId": token.TenantID,
+			"status":   "activated",
+		})
+	})
+	auth.POST("/activation/resend", func(c *gin.Context) {
+		var req struct {
+			TenantID string `json:"tenantId"`
+			UserID   string `json:"userId"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil || req.TenantID == "" || req.UserID == "" {
+			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
+			return
+		}
+		_, _, err := s.deps.ActivationService.Issue(c.Request.Context(), req.TenantID, req.UserID)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusAccepted, gin.H{"status": "queued"})
+	})
+
 	instructor := api.Group("/instructor")
 	instructor.Use(middleware.RequireRoles("instructor"))
 	instructor.GET("/health", s.healthHandler)

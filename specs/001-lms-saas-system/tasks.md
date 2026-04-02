@@ -87,20 +87,20 @@
 
 **Independent Test**: Tenant Admin cap nhat branding, import users tu CSV, gan role, tao group, user kich hoat account qua activation link
 
-- [ ] T032 [P] [US2] Tao users va activation migrations trong `backend/apps/api/migrations/002_users_and_auth.up.sql`
-- [ ] T033 [P] [US2] Tao groups va import jobs migrations trong `backend/apps/api/migrations/003_groups_and_imports.up.sql`
-- [ ] T034 [P] [US2] Tao user/auth models trong `backend/apps/api/internal/models/user.go`
-- [ ] T035 [P] [US2] Implement user repository trong `backend/apps/api/internal/database/user_repository.go`
-- [ ] T036 [P] [US2] Implement group repository trong `backend/apps/api/internal/database/group_repository.go`
-- [ ] T037 [US2] Implement activation token service (single-use, 24h, invalidate old) trong `backend/apps/api/internal/services/activation_service.go`
-- [ ] T038 [US2] Implement user service (create/invite/role assignment) trong `backend/apps/api/internal/services/user_service.go`
-- [ ] T039 [US2] Implement CSV import processor va row-level error reporting trong `backend/apps/api/internal/services/user_import_service.go`
-- [ ] T040 [US2] Implement tenant branding/settings service trong `backend/apps/api/internal/services/tenant_settings_service.go`
-- [ ] T041 [US2] Implement user/group/activation handlers trong `backend/apps/api/internal/handlers/user_handler.go`
-- [ ] T042 [US2] Implement branding/settings handlers trong `backend/apps/api/internal/handlers/tenant_settings_handler.go`
-- [ ] T043 [US2] Tao tenant admin users page trong `frontend/apps/web/src/app/(tenant-admin)/users/page.tsx`
-- [ ] T044 [P] [US2] Tao CSV import va invitation panel components trong `frontend/apps/web/src/components/users/UserImportPanel.tsx`
-- [ ] T045 [US2] Viet integration tests cho activation va CSV import flows trong `backend/apps/api/tests/integration/user_activation_import_test.go`
+- [X] T032 [P] [US2] Tao users va activation migrations trong `backend/apps/api/migrations/002_users_and_auth.up.sql`
+- [X] T033 [P] [US2] Tao groups va import jobs migrations trong `backend/apps/api/migrations/003_groups_and_imports.up.sql`
+- [X] T034 [P] [US2] Tao user/auth models trong `backend/apps/api/internal/models/user.go`
+- [X] T035 [P] [US2] Implement user repository trong `backend/apps/api/internal/database/user_repository.go`
+- [X] T036 [P] [US2] Implement group repository trong `backend/apps/api/internal/database/group_repository.go`
+- [X] T037 [US2] Implement activation token service (single-use, 24h, invalidate old) trong `backend/apps/api/internal/services/activation_service.go`
+- [X] T038 [US2] Implement user service (create/invite/role assignment) trong `backend/apps/api/internal/services/user_service.go`
+- [X] T039 [US2] Implement CSV import processor va row-level error reporting trong `backend/apps/api/internal/services/user_import_service.go`
+- [X] T040 [US2] Implement tenant branding/settings service trong `backend/apps/api/internal/services/tenant_settings_service.go`
+- [X] T041 [US2] Implement user/group/activation handlers trong `backend/apps/api/internal/handlers/user_handler.go`
+- [X] T042 [US2] Implement branding/settings handlers trong `backend/apps/api/internal/handlers/tenant_settings_handler.go`
+- [X] T043 [US2] Tao tenant admin users page trong `frontend/apps/web/src/app/(tenant-admin)/users/page.tsx`
+- [X] T044 [P] [US2] Tao CSV import va invitation panel components trong `frontend/apps/web/src/components/users/UserImportPanel.tsx`
+- [X] T045 [US2] Viet integration tests cho activation va CSV import flows trong `backend/apps/api/tests/integration/user_activation_import_test.go`
 
 **Checkpoint**: US2 hoan chinh va test doc lap
 
@@ -112,18 +112,18 @@
 
 **Independent Test**: Instructor tao course day du section/subsection/unit, publish thanh cong, assign nhom hoc vien, theo doi progress
 
-- [ ] T046 [P] [US3] Tao course structure migration trong `backend/apps/api/migrations/004_courses_structure.up.sql`
-- [ ] T047 [P] [US3] Tao enrollment va progress migration trong `backend/apps/api/migrations/005_enrollment_progress.up.sql`
-- [ ] T048 [P] [US3] Tao course hierarchy models trong `backend/apps/api/internal/models/course.go`
-- [ ] T049 [P] [US3] Tao course enrollment model trong `backend/apps/api/internal/models/course_enrollment.go`
-- [ ] T050 [US3] Implement course repository trong `backend/apps/api/internal/database/course_repository.go`
-- [ ] T051 [US3] Implement enrollment repository trong `backend/apps/api/internal/database/enrollment_repository.go`
-- [ ] T052 [US3] Implement course service (draft/publish/archive + hierarchy validation) trong `backend/apps/api/internal/services/course_service.go`
-- [ ] T053 [US3] Implement enrollment assignment service theo user/group/role trong `backend/apps/api/internal/services/enrollment_service.go`
-- [ ] T054 [US3] Implement course/enrollment handlers trong `backend/apps/api/internal/handlers/course_handler.go`
-- [ ] T055 [US3] Tao instructor course editor page trong `frontend/apps/web/src/app/(instructor)/courses/[courseId]/edit/page.tsx`
-- [ ] T056 [P] [US3] Tao publish validation panel component trong `frontend/apps/web/src/components/courses/PublishValidationPanel.tsx`
-- [ ] T057 [US3] Viet integration test cho publish validation va enrollment assignment trong `backend/apps/api/tests/integration/course_publish_enroll_test.go`
+- [X] T046 [P] [US3] Tao course structure migration trong `backend/apps/api/migrations/004_courses_structure.up.sql`
+- [X] T047 [P] [US3] Tao enrollment va progress migration trong `backend/apps/api/migrations/005_enrollment_progress.up.sql`
+- [X] T048 [P] [US3] Tao course hierarchy models trong `backend/apps/api/internal/models/course.go`
+- [X] T049 [P] [US3] Tao course enrollment model trong `backend/apps/api/internal/models/course_enrollment.go`
+- [X] T050 [US3] Implement course repository trong `backend/apps/api/internal/database/course_repository.go`
+- [X] T051 [US3] Implement enrollment repository trong `backend/apps/api/internal/database/enrollment_repository.go`
+- [X] T052 [US3] Implement course service (draft/publish/archive + hierarchy validation) trong `backend/apps/api/internal/services/course_service.go`
+- [X] T053 [US3] Implement enrollment assignment service theo user/group/role trong `backend/apps/api/internal/services/enrollment_service.go`
+- [X] T054 [US3] Implement course/enrollment handlers trong `backend/apps/api/internal/handlers/course_handler.go`
+- [X] T055 [US3] Tao instructor course editor page trong `frontend/apps/web/src/app/(instructor)/courses/[courseId]/edit/page.tsx`
+- [X] T056 [P] [US3] Tao publish validation panel component trong `frontend/apps/web/src/components/courses/PublishValidationPanel.tsx`
+- [X] T057 [US3] Viet integration test cho publish validation va enrollment assignment trong `backend/apps/api/tests/integration/course_publish_enroll_test.go`
 
 **Checkpoint**: US3 hoan chinh va test doc lap
 
