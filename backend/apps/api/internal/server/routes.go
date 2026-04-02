@@ -29,6 +29,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	api := r.Group("/api/v1")
 	api.Use(middleware.TenantContext())
 	api.Use(middleware.JWTAuth(jwtSecret))
+	api.Use(middleware.BlockDestructiveWhenImpersonating())
 
 	superAdmin := api.Group("/super-admin")
 	superAdmin.Use(middleware.RequireRoles("super_admin"))
@@ -64,6 +65,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	tenantScoped.POST("/courses/:courseId/archive", s.deps.CourseHandler.ArchiveCourse)
 	tenantScoped.GET("/courses/:courseId/enrollments", s.deps.CourseHandler.ListEnrollments)
 	tenantScoped.POST("/courses/:courseId/enrollments", s.deps.CourseHandler.AssignEnrollments)
+	tenantScoped.GET("/reports/dashboard", s.deps.ReportHandler.TenantDashboard)
+	tenantScoped.GET("/reports/courses/:courseId", s.deps.ReportHandler.CourseReport)
 	tenantScoped.GET("/branding", s.deps.TenantSettingsHandler.GetBranding)
 	tenantScoped.PATCH("/branding", s.deps.TenantSettingsHandler.PatchBranding)
 	tenantScoped.GET("/settings", s.deps.TenantSettingsHandler.GetSettings)
@@ -84,6 +87,19 @@ func (s *Server) RegisterRoutes() http.Handler {
 	me := api.Group("/me")
 	me.Use(middleware.RequireRoles("student", "instructor", "tenant_admin"))
 	me.GET("/courses", s.deps.StudentHandler.ListMyCourses)
+
+	adminImpersonation := api.Group("/admin")
+	adminImpersonation.Use(middleware.RequireRoles("super_admin"))
+	adminImpersonation.POST("/impersonations", s.deps.ImpersonationHandler.Start)
+	adminImpersonation.DELETE("/impersonations/:sessionId", s.deps.ImpersonationHandler.End)
+
+	adminReports := api.Group("/admin")
+	adminReports.Use(middleware.RequireRoles("super_admin"))
+	adminReports.GET("/reports/tenants-usage", s.deps.ReportHandler.AdminUsage)
+
+	tenantAudit := api.Group("/tenants/:tenantId")
+	tenantAudit.Use(middleware.RequireRoles("tenant_admin"))
+	tenantAudit.GET("/impersonation-audit", s.deps.ImpersonationHandler.ListAudit)
 
 	auth := api.Group("/auth")
 	auth.POST("/activation/verify", func(c *gin.Context) {

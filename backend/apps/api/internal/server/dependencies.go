@@ -17,6 +17,8 @@ type Dependencies struct {
 	CourseHandler         *handlers.CourseHandler
 	QuizHandler           *handlers.QuizHandler
 	StudentHandler        *handlers.StudentHandler
+	ImpersonationHandler  *handlers.ImpersonationHandler
+	ReportHandler         *handlers.ReportHandler
 	TenantSettingsHandler *handlers.TenantSettingsHandler
 	ActivationService     *services.ActivationService
 }
@@ -32,6 +34,8 @@ func NewDependencies(logger *slog.Logger) *Dependencies {
 	courseRepo := database.NewInMemoryCourseRepository()
 	enrollmentRepo := database.NewInMemoryEnrollmentRepository()
 	quizRepo := database.NewInMemoryQuizRepository()
+	impersonationRepo := database.NewInMemoryImpersonationRepository()
+	usageRepo := database.NewInMemoryUsageMetricsRepository()
 	subdomainService := services.NewSubdomainService([]string{"www", "api", "admin"})
 	auditService := services.NewAuditService(logger)
 	tenantService := services.NewTenantService(repo, subdomainService, auditService)
@@ -42,6 +46,8 @@ func NewDependencies(logger *slog.Logger) *Dependencies {
 	enrollmentService := services.NewEnrollmentService(enrollmentRepo, userRepo, groupRepo, courseRepo, auditService)
 	quizService := services.NewQuizService(quizRepo, auditService)
 	progressService := services.NewProgressService(enrollmentRepo)
+	impersonationService := services.NewImpersonationService(impersonationRepo, auditService)
+	reportingService := services.NewReportingService(usageRepo)
 	tenantSettingsService := services.NewTenantSettingsService()
 
 	_ = quizService.SeedQuiz(context.Background(), models.Quiz{
@@ -66,6 +72,14 @@ func NewDependencies(logger *slog.Logger) *Dependencies {
 		AttemptLimit:     1,
 		ScoringPolicy:    models.QuizScoringPolicyHighestValidAttempt,
 	})
+	_ = reportingService.SeedTenantMetric(context.Background(), models.UsageMetricDaily{
+		TenantID:          "tenant-001",
+		ActiveUserCount:   120,
+		ActiveCourseCount: 8,
+		CompletionRate:    73.5,
+		LoginCount:        460,
+		LearningMinutes:   12800,
+	})
 
 	return &Dependencies{
 		TenantHandler:         handlers.NewTenantHandler(tenantService),
@@ -73,6 +87,8 @@ func NewDependencies(logger *slog.Logger) *Dependencies {
 		CourseHandler:         handlers.NewCourseHandler(courseService, enrollmentService),
 		QuizHandler:           handlers.NewQuizHandler(quizService),
 		StudentHandler:        handlers.NewStudentHandler(progressService),
+		ImpersonationHandler:  handlers.NewImpersonationHandler(impersonationService),
+		ReportHandler:         handlers.NewReportHandler(reportingService),
 		TenantSettingsHandler: handlers.NewTenantSettingsHandler(tenantSettingsService),
 		ActivationService:     activationService,
 	}

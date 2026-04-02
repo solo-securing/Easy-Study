@@ -158,16 +158,16 @@
 
 **Independent Test**: Super Admin bat impersonation, thuc hien thao tac read/config, khong the xoa du lieu, audit log luu du thong tin phien va hanh dong
 
-- [ ] T070 [P] [US5] Tao impersonation migrations trong `backend/apps/api/migrations/007_impersonation_audit.up.sql`
-- [ ] T071 [P] [US5] Tao impersonation models trong `backend/apps/api/internal/models/impersonation_session.go`
-- [ ] T072 [US5] Implement impersonation repository trong `backend/apps/api/internal/database/impersonation_repository.go`
-- [ ] T073 [US5] Implement impersonation service (start/end/action tracking) trong `backend/apps/api/internal/services/impersonation_service.go`
-- [ ] T074 [US5] Implement destructive action guard middleware trong `backend/apps/api/internal/middleware/impersonation_guard.go`
-- [ ] T075 [US5] Implement impersonation handlers va audit endpoint trong `backend/apps/api/internal/handlers/impersonation_handler.go`
-- [ ] T076 [US5] Tao impersonation launcher component cho Super Admin trong `frontend/apps/web/src/components/impersonation/ImpersonationLauncher.tsx`
-- [ ] T077 [US5] Tao tenant admin impersonation audit page trong `frontend/apps/web/src/app/(tenant-admin)/audit/impersonation/page.tsx`
-- [ ] T078 [US5] Viet integration test cho destructive action blocking trong `backend/apps/api/tests/integration/impersonation_guard_test.go`
-- [ ] T079 [US5] Viet integration test dam bao Super Admin khong xuat hien trong tenant learner projections trong `backend/apps/api/tests/integration/impersonation_visibility_test.go`
+- [X] T070 [P] [US5] Tao impersonation migrations trong `backend/apps/api/migrations/007_impersonation_audit.up.sql`
+- [X] T071 [P] [US5] Tao impersonation models trong `backend/apps/api/internal/models/impersonation_session.go`
+- [X] T072 [US5] Implement impersonation repository trong `backend/apps/api/internal/database/impersonation_repository.go`
+- [X] T073 [US5] Implement impersonation service (start/end/action tracking) trong `backend/apps/api/internal/services/impersonation_service.go`
+- [X] T074 [US5] Implement destructive action guard middleware trong `backend/apps/api/internal/middleware/impersonation_guard.go`
+- [X] T075 [US5] Implement impersonation handlers va audit endpoint trong `backend/apps/api/internal/handlers/impersonation_handler.go`
+- [X] T076 [US5] Tao impersonation launcher component cho Super Admin trong `frontend/apps/web/src/components/impersonation/ImpersonationLauncher.tsx`
+- [X] T077 [US5] Tao tenant admin impersonation audit page trong `frontend/apps/web/src/app/(tenant-admin)/audit/impersonation/page.tsx`
+- [X] T078 [US5] Viet integration test cho destructive action blocking trong `backend/apps/api/tests/integration/impersonation_guard_test.go`
+- [X] T079 [US5] Viet integration test dam bao Super Admin khong xuat hien trong tenant learner projections trong `backend/apps/api/tests/integration/impersonation_visibility_test.go`
 
 **Checkpoint**: US5 hoan chinh va test doc lap
 
@@ -179,15 +179,15 @@
 
 **Independent Test**: Dashboard hien thi dung active users/active courses/completion; Instructor xem report khoa hoc khop du lieu thuc te
 
-- [ ] T080 [P] [US6] Tao usage metrics migration trong `backend/apps/api/migrations/008_usage_metrics_daily.up.sql`
-- [ ] T081 [P] [US6] Tao usage metric model trong `backend/apps/api/internal/models/usage_metric_daily.go`
-- [ ] T082 [US6] Implement usage metrics repository trong `backend/apps/api/internal/database/usage_metrics_repository.go`
-- [ ] T083 [US6] Implement reporting service cho tenant dashboard va course report trong `backend/apps/api/internal/services/reporting_service.go`
-- [ ] T084 [US6] Implement reporting handlers trong `backend/apps/api/internal/handlers/report_handler.go`
-- [ ] T085 [US6] Tao tenant admin dashboard page trong `frontend/apps/web/src/app/(tenant-admin)/dashboard/page.tsx`
-- [ ] T086 [US6] Tao instructor course report page trong `frontend/apps/web/src/app/(instructor)/reports/courses/[courseId]/page.tsx`
-- [ ] T087 [US6] Viet integration test cho reporting accuracy voi seeded data trong `backend/apps/api/tests/integration/reporting_accuracy_test.go`
-- [ ] T088 [US6] Viet performance test dashboard latency cho 10k users trong `backend/apps/api/tests/performance/dashboard_p95_test.go`
+- [X] T080 [P] [US6] Tao usage metrics migration trong `backend/apps/api/migrations/008_usage_metrics_daily.up.sql`
+- [X] T081 [P] [US6] Tao usage metric model trong `backend/apps/api/internal/models/usage_metric_daily.go`
+- [X] T082 [US6] Implement usage metrics repository trong `backend/apps/api/internal/database/usage_metrics_repository.go`
+- [X] T083 [US6] Implement reporting service cho tenant dashboard va course report trong `backend/apps/api/internal/services/reporting_service.go`
+- [X] T084 [US6] Implement reporting handlers trong `backend/apps/api/internal/handlers/report_handler.go`
+- [X] T085 [US6] Tao tenant admin dashboard page trong `frontend/apps/web/src/app/(tenant-admin)/dashboard/page.tsx`
+- [X] T086 [US6] Tao instructor course report page trong `frontend/apps/web/src/app/(instructor)/reports/courses/[courseId]/page.tsx`
+- [X] T087 [US6] Viet integration test cho reporting accuracy voi seeded data trong `backend/apps/api/tests/integration/reporting_accuracy_test.go`
+- [X] T088 [US6] Viet performance test dashboard latency cho 10k users trong `backend/apps/api/tests/performance/dashboard_p95_test.go`
 
 **Checkpoint**: US6 hoan chinh va test doc lap
 
