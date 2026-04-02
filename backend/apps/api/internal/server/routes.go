@@ -69,6 +69,22 @@ func (s *Server) RegisterRoutes() http.Handler {
 	tenantScoped.GET("/settings", s.deps.TenantSettingsHandler.GetSettings)
 	tenantScoped.PATCH("/settings", s.deps.TenantSettingsHandler.PatchSettings)
 
+	quizReaders := api.Group("/tenants/:tenantId")
+	quizReaders.Use(middleware.RequireRoles("student", "instructor", "tenant_admin", "super_admin"))
+	quizReaders.GET("/quizzes/:quizId", s.deps.QuizHandler.GetQuiz)
+	quizReaders.GET("/quizzes/:quizId/attempts/:attemptId", s.deps.QuizHandler.GetAttempt)
+
+	studentScoped := api.Group("/tenants/:tenantId")
+	studentScoped.Use(middleware.RequireRoles("student"))
+	studentScoped.POST("/quizzes/:quizId/attempts", s.deps.QuizHandler.StartAttempt)
+	studentScoped.PATCH("/quizzes/:quizId/attempts/:attemptId/autosave", s.deps.QuizHandler.Autosave)
+	studentScoped.POST("/quizzes/:quizId/attempts/:attemptId/submit", s.deps.QuizHandler.Submit)
+	studentScoped.GET("/courses/:courseId/progress/me", s.deps.StudentHandler.GetMyCourseProgress)
+
+	me := api.Group("/me")
+	me.Use(middleware.RequireRoles("student", "instructor", "tenant_admin"))
+	me.GET("/courses", s.deps.StudentHandler.ListMyCourses)
+
 	auth := api.Group("/auth")
 	auth.POST("/activation/verify", func(c *gin.Context) {
 		var req struct {

@@ -11,6 +11,7 @@ import (
 type EnrollmentRepository interface {
 	List(ctx context.Context, tenantID, courseID string) (models.EnrollmentList, error)
 	Replace(ctx context.Context, input models.EnrollmentAssignInput, rows []models.CourseEnrollment) (models.EnrollmentList, error)
+	ListByUser(ctx context.Context, tenantID, userID string) ([]models.UserCourseEnrollment, error)
 }
 
 type InMemoryEnrollmentRepository struct {
@@ -59,4 +60,25 @@ func (r *InMemoryEnrollmentRepository) Replace(_ context.Context, input models.E
 		CourseID: input.CourseID,
 		Items:    normalized,
 	}, nil
+}
+
+func (r *InMemoryEnrollmentRepository) ListByUser(_ context.Context, tenantID, userID string) ([]models.UserCourseEnrollment, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make([]models.UserCourseEnrollment, 0)
+	for key, rows := range r.items {
+		prefix := tenantID + ":"
+		if len(key) < len(prefix) || key[:len(prefix)] != prefix {
+			continue
+		}
+		courseID := key[len(prefix):]
+		for _, row := range rows {
+			if row.UserID == userID {
+				out = append(out, models.UserCourseEnrollment{CourseID: courseID})
+				break
+			}
+		}
+	}
+	return out, nil
 }

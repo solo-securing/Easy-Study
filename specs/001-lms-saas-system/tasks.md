@@ -135,18 +135,18 @@
 
 **Independent Test**: Student vao khoa hoc, hoan thanh unit, lam quiz voi autosave, mat ket noi va quay lai van tiep tuc duoc, diem duoc ghi nhan dung
 
-- [ ] T058 [P] [US4] Tao quiz attempts migration trong `backend/apps/api/migrations/006_quiz_attempts.up.sql`
-- [ ] T059 [P] [US4] Tao quiz models trong `backend/apps/api/internal/models/quiz.go`
-- [ ] T060 [US4] Implement quiz repository trong `backend/apps/api/internal/database/quiz_repository.go`
-- [ ] T061 [US4] Implement quiz service (start/autosave/submit/timeout/highest-valid-attempt) trong `backend/apps/api/internal/services/quiz_service.go`
-- [ ] T062 [US4] Implement progress aggregation service cho student trong `backend/apps/api/internal/services/progress_service.go`
-- [ ] T063 [US4] Implement quiz handlers trong `backend/apps/api/internal/handlers/quiz_handler.go`
-- [ ] T064 [US4] Implement student me handlers (my courses/progress) trong `backend/apps/api/internal/handlers/student_handler.go`
-- [ ] T065 [US4] Tao student my-courses page trong `frontend/apps/web/src/app/(student)/courses/page.tsx`
-- [ ] T066 [US4] Tao quiz attempt page co autosave timer trong `frontend/apps/web/src/app/(student)/quizzes/[quizId]/attempt/page.tsx`
-- [ ] T067 [P] [US4] Tao progress tracker component trong `frontend/apps/web/src/components/student/ProgressTracker.tsx`
-- [ ] T068 [US4] Viet integration tests cho autosave/recovery/timeout auto-submit trong `backend/apps/api/tests/integration/quiz_recovery_test.go`
-- [ ] T069 [US4] Viet frontend e2e test cho student learning flow trong `frontend/apps/web/tests/e2e/student_learning_flow.spec.ts`
+- [X] T058 [P] [US4] Tao quiz attempts migration trong `backend/apps/api/migrations/006_quiz_attempts.up.sql`
+- [X] T059 [P] [US4] Tao quiz models trong `backend/apps/api/internal/models/quiz.go`
+- [X] T060 [US4] Implement quiz repository trong `backend/apps/api/internal/database/quiz_repository.go`
+- [X] T061 [US4] Implement quiz service (start/autosave/submit/timeout/highest-valid-attempt) trong `backend/apps/api/internal/services/quiz_service.go`
+- [X] T062 [US4] Implement progress aggregation service cho student trong `backend/apps/api/internal/services/progress_service.go`
+- [X] T063 [US4] Implement quiz handlers trong `backend/apps/api/internal/handlers/quiz_handler.go`
+- [X] T064 [US4] Implement student me handlers (my courses/progress) trong `backend/apps/api/internal/handlers/student_handler.go`
+- [X] T065 [US4] Tao student my-courses page trong `frontend/apps/web/src/app/(student)/courses/page.tsx`
+- [X] T066 [US4] Tao quiz attempt page co autosave timer trong `frontend/apps/web/src/app/(student)/quizzes/[quizId]/attempt/page.tsx`
+- [X] T067 [P] [US4] Tao progress tracker component trong `frontend/apps/web/src/components/student/ProgressTracker.tsx`
+- [X] T068 [US4] Viet integration tests cho autosave/recovery/timeout auto-submit trong `backend/apps/api/tests/integration/quiz_recovery_test.go`
+- [X] T069 [US4] Viet frontend e2e test cho student learning flow trong `frontend/apps/web/tests/e2e/student_learning_flow.spec.ts`
 
 **Checkpoint**: US4 hoan chinh va test doc lap
 

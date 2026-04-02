@@ -29,6 +29,10 @@ type EnrollmentList struct {
 	Items    []CourseEnrollment `json:"items"`
 }
 
+type UserCourseEnrollment struct {
+	CourseID string
+}
+
 type EnrollmentAssignInput struct {
 	TenantID       string
 	CourseID       string
