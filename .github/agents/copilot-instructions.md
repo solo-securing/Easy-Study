@@ -27,3 +27,7 @@ tests/
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
+
+## TONE & STYLE
+
+- Language: Using Vietnamese as the primary language, but retaining English technical terms.

@@ -1,0 +1,40 @@
+name: Contract Validation
+
+on:
+  pull_request:
+    paths:
+      - "specs/001-lms-saas-system/contracts/**"
+      - "frontend/package.json"
+      - ".github/workflows/contract-validation.yml"
+  push:
+    branches: ["001-lms-saas-system", "main"]
+    paths:
+      - "specs/001-lms-saas-system/contracts/**"
+
+jobs:
+  validate-openapi:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate OpenAPI
+        run: pnpm dlx @apidevtools/swagger-cli validate ../specs/001-lms-saas-system/contracts/openapi-lms-v1.yaml
