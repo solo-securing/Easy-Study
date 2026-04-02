@@ -42,18 +42,18 @@
 
 **CRITICAL**: Khong bat dau user story khi phase nay chua xong
 
-- [ ] T009 Tao migration runner bootstrap trong `backend/apps/api/internal/database/migrate.go`
-- [ ] T010 [P] Implement tenant context middleware trong `backend/apps/api/internal/middleware/tenant_context.go`
-- [ ] T011 [P] Implement JWT authentication middleware trong `backend/apps/api/internal/middleware/auth_jwt.go`
-- [ ] T012 [P] Implement RBAC authorization middleware trong `backend/apps/api/internal/middleware/rbac.go`
-- [ ] T013 [P] Implement request logging va trace middleware trong `backend/apps/api/internal/middleware/request_logger.go`
-- [ ] T014 [P] Implement problem-details error mapper trong `backend/apps/api/internal/server/problem.go`
-- [ ] T015 [P] Implement audit log writer service trong `backend/apps/api/internal/services/audit_service.go`
-- [ ] T016 [P] Implement Redis rate limiter cho public APIs trong `backend/apps/api/internal/middleware/rate_limit.go`
-- [ ] T017 [P] Implement account lockout service (5 lan sai, khoa 15 phut) trong `backend/apps/api/internal/services/lockout_service.go`
-- [ ] T018 [P] Khoi tao worker entrypoint cho async jobs trong `backend/apps/api/cmd/workers/main.go`
-- [ ] T019 [P] Wire generated OpenAPI router vao server trong `backend/apps/api/internal/server/routes.go`
-- [ ] T020 Tao integration test bootstrap trong `backend/apps/api/tests/integration/test_main.go`
+- [X] T009 Tao migration runner bootstrap trong `backend/apps/api/internal/database/migrate.go`
+- [X] T010 [P] Implement tenant context middleware trong `backend/apps/api/internal/middleware/tenant_context.go`
+- [X] T011 [P] Implement JWT authentication middleware trong `backend/apps/api/internal/middleware/auth_jwt.go`
+- [X] T012 [P] Implement RBAC authorization middleware trong `backend/apps/api/internal/middleware/rbac.go`
+- [X] T013 [P] Implement request logging va trace middleware trong `backend/apps/api/internal/middleware/request_logger.go`
+- [X] T014 [P] Implement problem-details error mapper trong `backend/apps/api/internal/server/problem.go`
+- [X] T015 [P] Implement audit log writer service trong `backend/apps/api/internal/services/audit_service.go`
+- [X] T016 [P] Implement Redis rate limiter cho public APIs trong `backend/apps/api/internal/middleware/rate_limit.go`
+- [X] T017 [P] Implement account lockout service (5 lan sai, khoa 15 phut) trong `backend/apps/api/internal/services/lockout_service.go`
+- [X] T018 [P] Khoi tao worker entrypoint cho async jobs trong `backend/apps/api/cmd/workers/main.go`
+- [X] T019 [P] Wire generated OpenAPI router vao server trong `backend/apps/api/internal/server/routes.go`
+- [X] T020 Tao integration test bootstrap trong `backend/apps/api/tests/integration/test_main.go`
 
 **Checkpoint**: Foundation san sang - co the bat dau user stories
 
@@ -65,17 +65,17 @@
 
 **Independent Test**: Super Admin tao tenant moi, thay tenant trong danh sach, truy cap duoc subdomain, suspend/reactivate thanh cong
 
-- [ ] T021 [P] [US1] Tao tenant core migration (tenants, plans, tenant_plan_assignments) trong `backend/apps/api/migrations/001_tenant_core.up.sql`
-- [ ] T022 [P] [US1] Tao tenant models trong `backend/apps/api/internal/models/tenant.go`
-- [ ] T023 [P] [US1] Implement tenant repository trong `backend/apps/api/internal/database/tenant_repository.go`
-- [ ] T024 [US1] Implement tenant lifecycle service trong `backend/apps/api/internal/services/tenant_service.go`
-- [ ] T025 [US1] Implement reserved subdomain validation service trong `backend/apps/api/internal/services/subdomain_service.go`
-- [ ] T026 [US1] Implement tenant handlers (list/create/get/status) trong `backend/apps/api/internal/handlers/tenant_handler.go`
-- [ ] T027 [US1] Dang ky tenant routes va RBAC policies trong `backend/apps/api/internal/server/routes.go`
-- [ ] T028 [US1] Tao trang danh sach tenant cho Super Admin trong `frontend/apps/web/src/app/(super-admin)/tenants/page.tsx`
-- [ ] T029 [P] [US1] Tao tenant create form component trong `frontend/apps/web/src/components/tenants/TenantCreateForm.tsx`
-- [ ] T030 [P] [US1] Tao tenant status actions component trong `frontend/apps/web/src/components/tenants/TenantStatusActions.tsx`
-- [ ] T031 [US1] Viet integration test cho tenant lifecycle flow trong `backend/apps/api/tests/integration/tenant_lifecycle_test.go`
+- [X] T021 [P] [US1] Tao tenant core migration (tenants, plans, tenant_plan_assignments) trong `backend/apps/api/migrations/001_tenant_core.up.sql`
+- [X] T022 [P] [US1] Tao tenant models trong `backend/apps/api/internal/models/tenant.go`
+- [X] T023 [P] [US1] Implement tenant repository trong `backend/apps/api/internal/database/tenant_repository.go`
+- [X] T024 [US1] Implement tenant lifecycle service trong `backend/apps/api/internal/services/tenant_service.go`
+- [X] T025 [US1] Implement reserved subdomain validation service trong `backend/apps/api/internal/services/subdomain_service.go`
+- [X] T026 [US1] Implement tenant handlers (list/create/get/status) trong `backend/apps/api/internal/handlers/tenant_handler.go`
+- [X] T027 [US1] Dang ky tenant routes va RBAC policies trong `backend/apps/api/internal/server/routes.go`
+- [X] T028 [US1] Tao trang danh sach tenant cho Super Admin trong `frontend/apps/web/src/app/(super-admin)/tenants/page.tsx`
+- [X] T029 [P] [US1] Tao tenant create form component trong `frontend/apps/web/src/components/tenants/TenantCreateForm.tsx`
+- [X] T030 [P] [US1] Tao tenant status actions component trong `frontend/apps/web/src/components/tenants/TenantStatusActions.tsx`
+- [X] T031 [US1] Viet integration test cho tenant lifecycle flow trong `backend/apps/api/tests/integration/tenant_lifecycle_test.go`
 
 **Checkpoint**: US1 hoan chinh va test doc lap
 

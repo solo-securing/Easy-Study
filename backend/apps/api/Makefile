@@ -15,6 +15,12 @@ run:
 
 generate-api:
 	@go generate ./internal/server
+
+migrate-up:
+	@go run ./cmd/migrate up
+
+migrate-down:
+	@go run ./cmd/migrate down
 # Create DB container
 docker-run:
 	@if docker compose up --build 2>/dev/null; then \
@@ -64,4 +70,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest generate-api
+.PHONY: all build run test clean watch docker-run docker-down itest generate-api migrate-up migrate-down
