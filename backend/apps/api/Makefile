@@ -12,6 +12,9 @@ build:
 # Run the application
 run:
 	@go run cmd/api/main.go
+
+generate-api:
+	@go generate ./internal/server
 # Create DB container
 docker-run:
 	@if docker compose up --build 2>/dev/null; then \
@@ -61,4 +64,4 @@ watch:
             fi; \
         fi
 
-.PHONY: all build run test clean watch docker-run docker-down itest
+.PHONY: all build run test clean watch docker-run docker-down itest generate-api

@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: easy-study-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: easy_study
+      POSTGRES_USER: easy_study
+      POSTGRES_PASSWORD: easy_study
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U easy_study -d easy_study"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: easy-study-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    container_name: easy-study-rustfs
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      RUSTFS_ACCESS_KEY: easy_study_access
+      RUSTFS_SECRET_KEY: easy_study_secret
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_CONSOLE_PORT: "9001"
+    volumes:
+      - rustfs_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  rustfs_data:
